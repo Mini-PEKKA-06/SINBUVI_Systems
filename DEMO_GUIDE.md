@@ -1,0 +1,16 @@
+# V9 defense walkthrough
+
+1. Start Apache/MySQL and START_DEMO.bat. Use a new disposable imported database for write demonstrations; never reset original records. Portable credentials are in README; existing local pairs are protected in _codex/DEMO_CREDENTIALS.md.
+2. Public website: supplied project photographs, services, AM/PM hours, official contact link, responsive navigation/lightbox and separate authentic/fictional review collections.
+3. Sign in through one interface as Owner, Staff and Client. Role comes from verified records. Show persistent notification read state; new-since-previous-login differs from total unread, and first login invents no comparison.
+4. Financial proof: select2026/September and October. Before seeding, October0 was correct because requests were unpaid. Current totals20,100 and500 include500 fictional fully paid revenue each. Show the demo-contribution note and SQL/API/bar/report agreement. Never mark a legitimate request Paid just to fill a chart.
+5. Client → Request Quotation: choose today/future date, search materials by name/SKU/category, use arrows/Enter, add/remove rows and undo an unsaved change. Whole units step1; measured sq.m supports.01. Submit and show stable sequential ORD reference and requested date. No money is received on creation.
+6. Client offers a unit price and quantity; Owner counters; Staff recommends with optional reason. No total changes yet. Show validity, Expiring Soon/Expired and blocked expired approval. A counter renews validity.
+7. Owner final decision applies the agreed total. Show original catalog lines, separate adjustment and final total. The original1430 request now reflects approved1000, deposit400 and final600, with no invented payment. Settled/fulfilled history is protected.
+8. In the disposable quotation, Owner → View → Record Payment: enter the40% actually received. Client/Owner show Partially Paid and outstanding; realized revenue stays unchanged. Explicitly mark work completed, then receive the60% balance. Fully Paid contributes the final total exactly once. Print the reconciled receipt. Demonstrate an invalid overpayment/date without saving it.
+9. Owner → Undo saved change: reverse a safe inventory adjustment, future schedule edit or moderation. History remains. Payment/fulfillment dependencies, stale records and repeated reversal block unsafe undo. Do not erase a real payment.
+10. Show independent weekly Owner/Staff hours, dated time off and1–3-person assignment. Conflicts/unavailable periods and reductions invalidating jobs fail atomically. Staff cannot edit others or finalize negotiations.
+11. Show clients/profiles/recovery, stock planning/formula sheet, forecast assumptions, inquiries, review moderation/history, search and notification links. Forecast projections are separate from actuals and use labeled demo history.
+12. Browser Print/Save PDF was exercised; physical printer, manual assistive review and another physical laptop remain human checks. Logout clears private caches and local undo references.
+
+Amounts are19 October2026 snapshots and change with normal work. Seeds use unique keys and fictional stock receipts/sales that net to zero current stock. Repeated setup/import does not reset data. Email, payment recording and login are classroom workflows, not live gateway/SMTP infrastructure.

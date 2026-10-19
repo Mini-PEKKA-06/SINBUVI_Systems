@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Singin Connect</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script>
+    // Start before external assets; performance.now() is relative to navigation.
+    (()=>{
+      const controller=new AbortController();
+      let settled=false;
+      const fail=message=>{
+        if(settled)return;
+        settled=true;clearTimeout(deadline);controller.abort();
+        document.documentElement.dataset.portalStartup='error';
+        const showError=()=>{
+          const status=document.getElementById('persistenceStatus');
+          if(status){status.className='persistence-status is-error';status.textContent='Portal startup stopped. Use Retry to try again.';}
+          const app=document.getElementById('app');
+          if(!app)return;
+          app.replaceChildren();
+          const panel=document.createElement('section');
+          panel.className='startup-error';panel.setAttribute('role','alert');
+          const heading=document.createElement('h1');heading.textContent='Unable to open the portal';
+          const detail=document.createElement('p');detail.textContent=message;
+          const retry=document.createElement('button');retry.type='button';retry.className='primary';retry.textContent='Retry';retry.addEventListener('click',()=>location.reload());
+          const website=document.createElement('a');website.href='index.html';website.textContent='Back to Website';
+          panel.append(heading,detail,retry,website);app.append(panel);
+          const modal=document.getElementById('modal');if(modal)modal.hidden=true;
+        };
+        if(document.getElementById('app'))showError();else document.addEventListener('DOMContentLoaded',showError,{once:true});
+      };
+      // Leave one rendering frame of headroom inside the three-second limit.
+      const deadline=setTimeout(()=>fail('Startup did not finish within three seconds. Check the local server and retry.'),Math.max(0,2950-performance.now()));
+      window.portalStartup={
+        signal:controller.signal,
+        isActive:()=>!settled,
+        complete:()=>{if(!settled){settled=true;clearTimeout(deadline);document.documentElement.dataset.portalStartup='ready';}},
+        fail
+      };
+      document.documentElement.dataset.portalStartup='loading';
+      window.addEventListener('error',event=>{
+        const asset=event.target;
+        if(!settled&&(event.error||asset?.tagName==='SCRIPT'||asset?.rel==='stylesheet'))fail('A required portal file could not load. Check the local setup and retry.');
+      },true);
+    })();
+  </script>
+  <link rel="icon" href="assets/favicon.png" type="image/png">
+  <link rel="stylesheet" href="fonts.css?v=9.0.0">
+  <link rel="stylesheet" href="theme.css?v=9.0.0">
+  <link rel="stylesheet" href="style.css?v=9.0.0">
+  <link rel="stylesheet" href="client-portal.css?v=9.0.0">
+  <link rel="stylesheet" href="v7.css?v=9.0.0">
+  <link rel="stylesheet" href="v8.css?v=9.0.0">
+  <link rel="stylesheet" href="v9.css?v=9.0.0">
+</head>
+<body>
+  <div id="app"><div class="splash-screen" role="status" aria-live="polite"><div class="splash-content"><img src="logo.png" class="splash-logo" width="150" height="150" alt="Singin Connect logo"><div class="splash-title">Singin Connect</div><p class="splash-subtitle">Opening your workspace…</p><div class="splash-loading" aria-hidden="true"><span></span></div></div></div></div>
+  <noscript><style>#app{display:none}</style><p>JavaScript is required for the management portal. <a href="index.html">Visit the public website</a> for contact information.</p></noscript>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.config.js?v=9.0.0"></script>
+  <script src="persistence.js?v=9.0.0"></script>
+  <script src="script.js?v=9.0.0"></script>
+  <script src="shared-time.js?v=9.0.0"></script>
+  <script src="v2-ui.js?v=9.0.0"></script>
+  <script src="v3-ui.js?v=9.0.0"></script>
+  <script src="v4-ui.js?v=9.0.0"></script>
+  <script src="inventory-planning-ui.js?v=9.0.0"></script>
+  <script src="scheduling-team-ui.js?v=9.0.0"></script>
+  <script src="offline-financial.js?v=9.0.0"></script>
+  <script src="financial-ui.js?v=9.0.0"></script>
+  <script src="reviews-ui.js?v=9.0.0"></script>
+  <script src="searchable-select.js?v=9.0.0"></script>
+  <script src="v8-ui.js?v=9.0.0"></script>
+  <script src="v9-ui.js?v=9.0.0"></script>
+  <script src="bootstrap.js?v=9.0.0"></script>
+</body>
+</html>

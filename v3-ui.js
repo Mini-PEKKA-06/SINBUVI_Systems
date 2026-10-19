@@ -1,0 +1,50 @@
+// Small V3 UI boundary: shared password controls and server-backed global search.
+const v3LoginBase=login,v3LayoutBase=layout;
+login=function(){let html=v3LoginBase();const configured=String(SINGIN_FACEBOOK_URL||'').trim();let url=null;try{const value=new URL(configured);if(['https:','http:'].includes(value.protocol))url=value.href;}catch{}
+ const social=`<div class="facebook-brand">${url?`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true" class="facebook-icon">f</span> Visit us on Facebook <span aria-hidden="true">↗</span></a>`:'<span class="facebook-unavailable" aria-disabled="true"><span aria-hidden="true" class="facebook-icon">f</span> Facebook page · Coming soon</span>'}</div>`;
+ return html.replace('<div class="login-brand">','<div class="login-brand">'+social);
+};
+layout=function(content){let html=v3LayoutBase(content);html=html.replace(/<div class="topbar-search">[\s\S]*?<\/div>/,`<div class="topbar-search"><div class="search-control"><input id="globalSearch" type="search" placeholder="Search records and pages…" aria-label="Search records and pages" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchSuggestions" autocomplete="off" maxlength="100" oninput="queueSearch(this.value)" onfocus="focusSearch()" onkeydown="handleGlobalSearch(event)"><button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch()">×</button></div><div id="searchSuggestions" class="search-suggestions hidden"></div></div>`);
+ if(!DEMO_MODE&&state.account&&!state.account.email)html=html.replace('<section class="content">','<section class="content"><div class="profile-completion" role="status">Add your email to complete your existing account. <button class="text-action" onclick="nav(\'Profile\')">Complete profile</button></div>');
+ return html;
+};
+function enhancePasswords(){document.querySelectorAll('input[type="password"]:not([data-visibility-ready])').forEach(input=>{
+ input.dataset.visibilityReady='1';if(!input.id)input.id='password-'+crypto.randomUUID();const wrap=document.createElement('div');wrap.className='password-control';input.before(wrap);wrap.append(input);const button=document.createElement('button');button.type='button';button.className='password-toggle';button.setAttribute('aria-controls',input.id);button.setAttribute('aria-pressed','false');button.setAttribute('aria-label','Show password');button.innerHTML='<svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>';
+ button.addEventListener('click',()=>{const show=input.type==='password';input.type=show?'text':'password';button.setAttribute('aria-pressed',String(show));button.setAttribute('aria-label',show?'Hide password':'Show password');});wrap.append(button);
+ });}
+new MutationObserver(enhancePasswords).observe(document.body,{childList:true,subtree:true});
+let searchTimer,searchVersion=0,searchOptions=[],searchActive=-1;
+function recentKey(){return 'singin-search:'+String(state.account?.id||state.clientId||'legacy');}
+function recentSearches(){try{return JSON.parse(sessionStorage.getItem(recentKey())||'[]').filter(x=>typeof x==='string').slice(0,8);}catch{return [];}}
+function rememberSearch(query){if(!query)return;try{const list=recentSearches().filter(x=>x.toLowerCase()!==query.toLowerCase());sessionStorage.setItem(recentKey(),JSON.stringify([query,...list].slice(0,8)));}catch{}}
+function clearRecentSearches(){try{sessionStorage.removeItem(recentKey());}catch{}focusSearch();}
+function searchBox(){return document.getElementById('searchSuggestions');}
+function closeSearch(){searchVersion++;clearTimeout(searchTimer);searchBox()?.classList.add('hidden');document.getElementById('globalSearch')?.setAttribute('aria-expanded','false');}
+function displaySearch(html){const box=searchBox();if(!box)return;box.innerHTML=html;box.classList.remove('hidden');document.getElementById('globalSearch')?.setAttribute('aria-expanded','true');}
+function focusSearch(){const input=document.getElementById('globalSearch');if(!input)return;if(input.value.trim()){queueSearch(input.value);return;}searchActive=-1;searchOptions=recentSearches().map(query=>({kind:'recent',title:query}));displaySearch(`<div class="search-heading">Recent searches <button type="button" class="text-action" onclick="clearRecentSearches()">Clear history</button></div><div role="listbox" aria-label="Recent searches">${searchOptions.map((r,i)=>`<button type="button" role="option" aria-selected="false" id="search-option-${i}" class="search-option" onclick="selectSearch(${i})">${escapeHtml(r.title)}</button>`).join('')||'<p class="search-empty">Search orders, materials, people, schedules and pages.</p>'}</div>`);}
+function queueSearch(value){clearTimeout(searchTimer);const version=++searchVersion,query=value.trim();searchActive=-1;if(!query){focusSearch();return;}if(query.length<2){searchOptions=[];displaySearch('<p class="search-empty">Enter at least two characters.</p>');return;}displaySearch('<p class="search-empty" role="status">Searching…</p>');searchTimer=setTimeout(()=>runSearch(query,version),220);}
+async function runSearch(query,version){try{
+ if(DEMO_MODE){displaySearch('<p class="search-empty">Legacy demo search: press Enter to search your local records.</p>');return;}
+ const result=await apiRequest('search.php?q='+encodeURIComponent(query));if(version!==searchVersion)return;searchOptions=[];
+ const html=result.groups.map(g=>`<div class="search-heading">${escapeHtml(g.label)}</div>${g.items.map(item=>{const i=searchOptions.push(item)-1;return `<button type="button" class="search-option" role="option" aria-selected="false" id="search-option-${i}" onclick="selectSearch(${i})"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></button>`;}).join('')}`).join('');
+ displaySearch(`<div role="listbox" aria-label="Search results">${html||'<p class="search-empty">No accessible results. Try an order reference, material, client name or date.</p>'}</div>`);
+ }catch(error){if(version===searchVersion){searchOptions=[];displaySearch('<p class="search-empty" role="alert">'+escapeHtml(error.message)+'</p>');}}
+}
+handleGlobalSearch=function(event){if(DEMO_MODE&&event.key==='Enter'){closeSearch();return originalUI.handleGlobalSearch(event);}if(event.key==='Escape'){closeSearch();return;}if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();if(searchBox()?.classList.contains('hidden'))focusSearch();if(!searchOptions.length)return;searchActive=(searchActive+(event.key==='ArrowDown'?1:-1)+searchOptions.length)%searchOptions.length;document.querySelectorAll('.search-option').forEach((el,i)=>el.setAttribute('aria-selected',String(i===searchActive)));const option=document.getElementById('search-option-'+searchActive);event.target.setAttribute('aria-activedescendant',option.id);option.scrollIntoView({block:'nearest'});}else if(event.key==='Enter'){event.preventDefault();if(searchOptions.length)selectSearch(searchActive<0?0:searchActive);}};
+function clearSearch(){const input=document.getElementById('globalSearch');if(input){input.value='';input.removeAttribute('aria-activedescendant');input.focus();focusSearch();}}
+async function selectSearch(index){const item=searchOptions[index];if(!item)return;const query=document.getElementById('globalSearch').value.trim();if(item.kind==='recent'){const input=document.getElementById('globalSearch');input.value=item.title;queueSearch(item.title);return;}rememberSearch(query);closeSearch();
+ if(item.kind==='product'){if(state.role==='admin'){nav('Inventory');openInventory(Number(item.id));}else{const p=state.inventory.find(p=>String(p.id)===item.id);if(p)openModal(`<h2>${escapeHtml(p.name)}</h2><p>${escapeHtml(p.category)} · ${escapeHtml(p.unit)}</p><p>${money(p.price)} · ${p.quantity} available</p><div class="modal-actions"><button class="primary" onclick="closeModal()">Close</button></div>`);}return;}
+ if(item.kind==='person'){if(state.role==='admin')nav('Clients');viewClient(Number(item.id));return;}
+ if(item.kind==='staff'){nav('User Management');openStaff(Number(item.id));return;}
+ if(item.kind==='notification'){try{const {notification}=await apiRequest('notification.php?id='+encodeURIComponent(item.id));if(!state.notifications.some(n=>String(n.id)===item.id))state.notifications.push(notification);await openNotification(item.id);}catch(error){toast(error.message);}return;}
+ nav(item.page);if(item.kind==='order')viewTxn(item.id);else if(item.kind==='negotiation')openNegotiation(item.id);else if(item.kind==='schedule')openJob(item.id);else if(item.kind==='forecast')openModal(`<h2>${escapeHtml(item.title)}</h2><p>Saved forecast: ${escapeHtml(item.detail)}</p><p class="card-sub">Historical saved estimate; its model may differ from the current method. Current forecasts use shared payment-dated revenue.</p>`);
+}
+document.addEventListener('click',event=>{if(!event.target.closest('.topbar-search'))closeSearch();});
+// Once per full document load, including an existing restored session. Never on polling.
+const presentationAccounts=new Set();
+const v3ApplyAccountBase=applyAccount;
+applyAccount=function(account,options={}){v3ApplyAccountBase(account);if(!DEMO_MODE&&!presentationAccounts.has(account.id)){presentationAccounts.add(account.id);state.presentationReady=apiRequest('presentation.php',{reload:true},options);}};
+const v3RefreshBase=refreshDatabase;
+refreshDatabase=async function(redraw=false,options={}){if(state.presentationReady){const ready=state.presentationReady;state.presentationReady=null;await ready;}if(options.signal?.aborted)throw new DOMException('Startup was cancelled.','AbortError');return v3RefreshBase(redraw,options);};
+const v3SummaryBase=showLoginSummary;
+showLoginSummary=function(summary){v3SummaryBase(summary&&!DEMO_MODE?{...summary,totalUnread:Number(state.unreadCount??summary.totalUnread)}:summary);};
